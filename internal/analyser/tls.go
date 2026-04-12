@@ -2,41 +2,53 @@ package analyser
 
 import (
 	"netintel/internal/models"
+	"time"
 )
 
 func checkTLS(result *models.Result) []models.Finding {
 	var findings []models.Finding
 
+	tls := result.TLS
+
 	// No TLS HTTP only
-	if result.TLSExpiry.IsZero() {
+	if !result.HTTP.UsedHTTPS {
 		findings = append(findings, models.Finding{
 			Severity: models.High,
-			Message:  "No TLS detected (HTTP)",
+			Type:     "TLS",
+			Message:  "No TLS dectected",
 		})
 		return findings
 	}
 
+	// If no expiry info, skip firther checks
+	if tls.Expiry.IsZero() {
+		return findings
+	}
+
+	daysLeft := int(time.Until(tls.Expiry).Hours() / 24)
+
 	// Expierd cert
-	if result.TLSDaysleft < 0 {
+	if daysLeft < 0 {
 		findings = append(findings, models.Finding{
 			Severity: models.Critical,
+			Type:     "TLS",
 			Message:  "TLS certificate has espired",
 		})
-	}
-
-	// Expiring soon
-	if result.TLSDaysleft >= 0 && result.TLSDaysleft < 7 {
+	} else if daysLeft < 7 {
+		// Expiring soon
 		findings = append(findings, models.Finding{
 			Severity: models.High,
-			Message:  "TLS certificate expiers soon",
+			Type:     "TLS",
+			Message:  "TLS certificate expires soon",
 		})
 	}
 
-	// Info-level insight
-	if result.TLSIssuer != "" {
+	// Iformationl
+	if tls.Issuer != "" {
 		findings = append(findings, models.Finding{
 			Severity: models.Low,
-			Message:  "TLS issuer " + result.TLSIssuer,
+			Type:     "TLS",
+			Message:  "TLS issuer " + tls.Issuer,
 		})
 	}
 

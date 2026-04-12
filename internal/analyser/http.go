@@ -2,52 +2,67 @@ package analyser
 
 import "netintel/internal/models"
 
-func checkStatus(result *models.Result) []models.Finding {
+func checkHTTPStatus(result *models.Result) []models.Finding {
+	http := result.HTTP
+
+	var findings []models.Finding
+	findings = append(findings, checkStatus(&http)...)
+	findings = append(findings, checkHTTPServerHeaders(&http)...)
+
+	return findings
+}
+
+func checkStatus(result *models.HTTPInfo) []models.Finding {
 	var findings []models.Finding
 
 	if result.StatusCode >= 500 {
 		findings = append(findings, models.Finding{
 			Severity: models.High,
-			Message:  "Server error (5xx responce)",
+			Type:     "HTTP",
+			Message:  "Server error (5xx response)",
 		})
 
 	} else if result.StatusCode >= 400 {
 		findings = append(findings, models.Finding{
 			Severity: models.Medium,
-			Message:  "Client error (4xx responce)",
+			Type:     "HTTP",
+			Message:  "Client error (4xx response)",
 		})
 	}
 	return findings
 }
 
-func checkServerHeaders(result *models.Result) []models.Finding {
+func checkHTTPServerHeaders(result *models.HTTPInfo) []models.Finding {
 	var findings []models.Finding
 
 	if result.Server != "" {
 		findings = append(findings, models.Finding{
 			Severity: models.Low,
-			Message:  "Server header exposed " + result.Server,
+			Type:     "HTTP",
+			Message:  "Server header exposed (information disclosure)" + result.Server,
 		})
 	}
 
 	return findings
 }
 
-func checkSecurityHeaders(result *models.Result) []models.Finding {
+func checkHTTPSecurityHeaders(result *models.Result) []models.Finding {
 	var findings []models.Finding
 
-	headers := result.Headers
+	headers := result.HTTP.Headers
 
-	if headers.Get("Strict-Transport-Security") == "" {
+	if result.HTTP.UsedHTTPS && headers.Get("Strict-Transport-Security") == "" {
 		findings = append(findings, models.Finding{
 			Severity: models.Medium,
+			Type:     "Security",
 			Message:  "Missing HSTS header",
 		})
 	}
 
 	if headers.Get("Content-Security-Policy") == "" {
 		findings = append(findings, models.Finding{
-			Severity: models.Medium,
+			Severity: models.Low,
+			Type:     "Security",
 			Message:  "Missing Content Security Policy",
 		})
 	}
