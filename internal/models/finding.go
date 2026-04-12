@@ -11,5 +11,13 @@ const (
 
 type Finding struct {
 	Severity Severity
+	Type     string
 	Message  string
 }
+
+/* old code
+type Finding struct {
+	Severity Severity
+	Message  string
+}
+*/
