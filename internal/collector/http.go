@@ -9,17 +9,19 @@ import (
 	"netintel/internal/models"
 )
 
-func exractHostname(rawURL string) string {
+func extractHostname(rawURL string) string {
 	parsed, err := url.Parse(rawURL)
-	if err != nil {
+	if err != nil || parsed.Hostname() == "" {
 		return rawURL
 	}
 	return parsed.Hostname()
 }
 
-func CheckWebsite(url string) (*models.Result, error) {
+func CheckWebsite(rawURL string) (*models.Result, error) {
 
-	host := exractHostname(url)
+	host := extractHostname(rawURL)
+
+	// DNS
 	ips, _ := net.LookupIP(host)
 
 	var ipStrs []string
@@ -30,9 +32,12 @@ func CheckWebsite(url string) (*models.Result, error) {
 		ipStrs = append(ipStrs, ipStr)
 
 		names, _ := net.LookupAddr(ipStr)
-		reverse = append(reverse, names...)
+		if len(names) > 0 {
+			reverse = append(reverse, names...)
+		}
 	}
 
+	// HTTP Client
 	var redirectCount int
 
 	client := http.Client{
@@ -42,49 +47,53 @@ func CheckWebsite(url string) (*models.Result, error) {
 			return nil
 		},
 	}
+
 	start := time.Now()
 
-	resp, err := client.Get(url)
-
-	finalURL := resp.Request.URL.String()
-
-	UsedHTTPS := resp.Request.URL.Scheme == "https"
-
-	var issuer string
-	var expiary time.Time
-	var daysLeft int
-
-	if resp.TLS != nil && len(resp.TLS.PeerCertificates) > 0 {
-		cert := resp.TLS.PeerCertificates[0]
-
-		expiary = cert.NotAfter
-		issuer = cert.Issuer.CommonName
-		daysLeft = int(time.Until(expiary).Hours() / 24)
-	}
-
+	resp, err := client.Get(rawURL)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
+	// HTTP Data
+	finalURL := resp.Request.URL.String()
+	usedHTTPS := resp.Request.URL.Scheme == "https"
+
+	// TLS data
+	var issuer string
+	var expiry time.Time
+
+	if resp.TLS != nil && len(resp.TLS.PeerCertificates) > 0 {
+		cert := resp.TLS.PeerCertificates[0]
+		expiry = cert.NotAfter
+		issuer = cert.Issuer.CommonName
+	}
+
+	// Build result
 	result := &models.Result{
-		URL:        url,
-		Status:     resp.Status,
-		StatusCode: resp.StatusCode,
-		Latency:    time.Since(start),
-		Server:     resp.Header.Get("Server"),
-		Headers:    resp.Header,
+		URL:  rawURL,
+		Host: host,
 
-		TLSIssuer:   issuer,
-		TLSExpiry:   expiary,
-		TLSDaysleft: daysLeft,
+		HTTP: models.HTTPInfo{
+			Status:        resp.Status,
+			StatusCode:    resp.StatusCode,
+			Latency:       time.Since(start),
+			Server:        resp.Header.Get("Server"),
+			Headers:       resp.Header,
+			FinalURL:      finalURL,
+			RedirectCount: redirectCount,
+			UsedHTTPS:     usedHTTPS,
+		},
 
-		DNSIPs:     ipStrs,
-		ReverseDNS: reverse,
-
-		FinalURL:      finalURL,
-		RedirectCount: redirectCount,
-		UsedHTTPS:     UsedHTTPS,
+		TLS: models.TLSInfo{
+			Issuer: issuer,
+			Expiry: expiry,
+		},
+		DNS: models.DNSInfo{
+			IPs:        ipStrs,
+			ReverseDNS: reverse,
+		},
 	}
 	return result, nil
 }
