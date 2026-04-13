@@ -110,7 +110,7 @@ tests/        # Integration tests
 
 ---
 
-## 🔮 Future Improvements
+## Future Improvements
 
 * JSON output mode for automation
 * Additional threat intelligence signals
