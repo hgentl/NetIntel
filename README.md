@@ -39,7 +39,7 @@ Collector → Analyzer → Scorer → CLI Output
 ### Clone & Build
 
 ```
-git clone https://github.com/yourusername/netintel.git
+git clone https://github.com/hgentl/netintel.git
 cd netintel
 go build -o netintel
 ```
