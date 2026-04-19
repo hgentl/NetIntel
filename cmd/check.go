@@ -19,41 +19,38 @@ var checkCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 
 	Run: func(cmd *cobra.Command, args []string) {
-		// create WaitGroup
+
 		var wg sync.WaitGroup
-		// create channels
 		resultsChan := make(chan *models.Result, len(args))
 		errorsChan := make(chan error, len(args))
-		// Goroutines run
+
 		for _, inputURL := range args {
 			wg.Add(1)
 
 			go func(url string) {
 				defer wg.Done()
-				// standardise input
+
 				if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 					url = "https://" + url
 				}
-				// call collector
+
 				result, err := collector.CheckWebsite(url)
-				// if any errors - return errors
+
 				if err != nil {
 					errorsChan <- fmt.Errorf("failed for %s: %v", url, err)
 					return
 				}
-				// return results
+
 				resultsChan <- result
 			}(inputURL)
 		}
 
-		// Close channels when done
 		go func() {
 			wg.Wait()
 			close(resultsChan)
 			close(errorsChan)
 		}()
-		// read channels
-		// whichever channel is ready, it is read
+
 		for resultsChan != nil || errorsChan != nil {
 			select {
 			case result, ok := <-resultsChan:
