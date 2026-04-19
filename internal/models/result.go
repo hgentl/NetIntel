@@ -12,6 +12,8 @@ type Result struct {
 	HTTP HTTPInfo
 	TLS  TLSInfo
 	DNS  DNSInfo
+
+	Errors []string
 }
 
 type HTTPInfo struct {
