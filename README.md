@@ -1,42 +1,49 @@
 # NetIntel
 
-NetIntel is a Go-based CLI tool for website monitoring, infrastructure analysis, and lightweight threat intelligence. It goes beyond simple uptime checks by collecting data, analysing security posture, and producing a risk score.
+NetIntel is a concurrent CLI-based infrastructure analysis and lightweight threat intelligence tool written in Go.
+
+It performs multi-layer inspection of web targets (DNS, HTTP, TLS), analyses potential risks, and produces a weighted risk score.
+
+---
+## Project Goals
+
+This project was built to demonstrate:
+
+* Backend engineering fundamentals in Go
+* Concurrency and system design
+* Network programming (DNS, HTTP, TLS)
 
 ---
 
 ## Features
 
-* Website availability & latency checks
-* DNS resolution & reverse lookup analysis
-* TLS certificate inspection (expiry, issuer)
-* HTTP security header analysis
-* Risk scoring system (LOW → CRITICAL)
 * Concurrent scanning of multiple targets
+* DNS resolution & reverse lookup analysis
+* HTTP inspection (status codes, headers, latency, redirects)
+* TLS analysis (certificate issuer, expiry, HTTPS enforcement)
+* Risk scoring system (LOW → CRITICAL)
+* Retry logic with backoff for network resilience
+* Partial result handling (graceful failure, no data loss)
 
 ---
 
 ## How It Works
 
-NetIntel follows a modular pipeline architecture:
+NetIntel follows a modular pipeline :
 
 ```
-Collector → Analyzer → Scorer → CLI Output
+Collector → Analyser → Scorer → CLI Output
 ```
 
-* **Collector**: Gathers raw data (HTTP, DNS, TLS)
-* **Analyzer**: Applies security rules and generates findings
+* **Collector**: Gathers raw data form DNS, HTTP and TLS layers with retries and timeouts.
+* **Analyser**: Applies rule based checks to identify risks and misconfigurations.
 * **Scorer**: Converts findings into a risk score
-* **CLI**: Displays structured output
+* **CLI**: Handles concurrency, orchestration and output formattiing
 
 ---
 
 ## Installation
 
-### Prerequisites
-
-* Go 1.20+
-
-### Clone & Build
 
 ```
 git clone https://github.com/hgentl/NetIntel.git
@@ -72,51 +79,14 @@ Latency: 120ms
 Server: nginx
 
 Findings:
-[LOW] (DNS) Domain resolves to multiple IPs
-[MEDIUM] (HTTP) Missing HSTS header
+[LOW] (HTTP) Server header exposed nginx
+[MEDIUM] (Headers) Missing HSTS header
 
-Risk Score: 75 (MEDIUM)
+Risk Score: 85 (LOW)
 =================================
+
+[ERROR] https://bad-domain.cmo → DNS lookup failed
 ```
-
----
-
-## Testing
-
-Run all tests:
-
-```
-go test ./...
-```
-
-The project includes:
-
-* Unit tests for analyzer and scoring logic
-* Integration tests using httptest for HTTP collection
-
----
-
-## Project Structure
-
-```
-internal/
-  analyzer/   # Security analysis logic
-  collector/  # Data collection (HTTP, DNS, TLS)
-  models/     # Shared data structures
-  scorer/     # Risk scoring engine
-cmd/          # CLI commands
-tests/        # Integration tests
-```
-
----
-
-## Future Improvements
-
-* (controlled concurrency)
-* Rate limiting
-* JSON output for automation
-* Structured logging
-* Additional security checks
 
 ---
 
