@@ -19,27 +19,29 @@ var checkCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 
 	Run: func(cmd *cobra.Command, args []string) {
+		// create WaitGroup
 		var wg sync.WaitGroup
-
-		resultsChan := make(chan *models.Result)
-		errorsChan := make(chan error)
-
+		// create channels
+		resultsChan := make(chan *models.Result, len(args))
+		errorsChan := make(chan error, len(args))
+		// Goroutines run
 		for _, inputURL := range args {
 			wg.Add(1)
 
 			go func(url string) {
 				defer wg.Done()
-
+				// standardise input
 				if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 					url = "https://" + url
 				}
-
+				// call collector
 				result, err := collector.CheckWebsite(url)
+				// if any errors - return errors
 				if err != nil {
 					errorsChan <- fmt.Errorf("failed for %s: %v", url, err)
 					return
 				}
-
+				// return results
 				resultsChan <- result
 			}(inputURL)
 		}
@@ -50,16 +52,26 @@ var checkCmd = &cobra.Command{
 			close(resultsChan)
 			close(errorsChan)
 		}()
+		// read channels
+		// whichever channel is ready, it is read
+		for resultsChan != nil || errorsChan != nil {
+			select {
+			case result, ok := <-resultsChan:
+				if !ok {
+					resultsChan = nil
+					continue
+				}
+				printResult(result)
 
-		// Handle results
-		for result := range resultsChan {
-			printResult(result)
+			case err, ok := <-errorsChan:
+				if !ok {
+					errorsChan = nil
+					continue
+				}
+				fmt.Printf("[ERROR] %v\n", err)
+			}
 		}
 
-		// Handle errors
-		for err := range errorsChan {
-			fmt.Println("Error:", err)
-		}
 	},
 }
 
@@ -71,6 +83,13 @@ func printResult(result *models.Result) {
 
 	if result.HTTP.Server != "" {
 		fmt.Println("Server:", result.HTTP.Server)
+	}
+
+	if len(result.Errors) > 0 {
+		fmt.Println("\nErrors:")
+		for _, e := range result.Errors {
+			fmt.Println("-", e)
+		}
 	}
 
 	findings := analyser.Analyse(result)
