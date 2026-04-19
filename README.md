@@ -112,11 +112,11 @@ tests/        # Integration tests
 
 ## Future Improvements
 
-* JSON output mode for automation
-* Additional threat intelligence signals
-* Subdomain enumeration
-* Port scanning module
-* CI/CD pipeline integration
+* (controlled concurrency)
+* Rate limiting
+* JSON output for automation
+* Structured logging
+* Additional security checks
 
 ---
 
