@@ -66,7 +66,7 @@ var checkCmd = &cobra.Command{
 				}
 
 				findings := analyser.Analyse(result)
-				score, risk := scorer.Calculate(findings)
+				score, risk := scorer.Calculate(result, findings)
 
 				if jsonOutput {
 					printJSON(result, findings, score, risk)
@@ -139,7 +139,7 @@ func printResult(result *models.Result, findings []models.Finding, score int, ri
 		fmt.Printf(" [%s] (%s) %s\n", f.Severity, f.Type, f.Message)
 	}
 
-	fmt.Printf("\nRisk Score: %d (%s\n)", score, risk)
+	fmt.Printf("\nRisk Score: %d (%s)\n", score, risk)
 	fmt.Println("=================================")
 
 }

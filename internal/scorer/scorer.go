@@ -2,40 +2,63 @@ package scorer
 
 import "netintel/internal/models"
 
-var weights = map[models.Severity]int{
-	models.Critical: 40,
-	models.High:     25,
-	models.Medium:   15,
-	models.Low:      5,
-}
+const (
+	RiskLow      = "LOW"
+	RiskMedium   = "MEDIUM"
+	RiskHigh     = "HIGH"
+	RiskCritical = "CRITICAL"
+)
 
-func Calculate(findings []models.Finding) (int, string) {
-	// start at 100 = safe
+func Calculate(result *models.Result, findings []models.Finding) (int, string) {
 	score := 100
 
+	var lowCount, mediumCount int
+
 	for _, f := range findings {
-		if weight, ok := weights[f.Severity]; ok {
-			score -= weight
+		switch f.Severity {
+
+		case models.Critical:
+			score -= 40
+
+		case models.High:
+			score -= 25
+
+		case models.Medium:
+			mediumCount++
+
+		case models.Low:
+			lowCount++
 		}
 	}
-	// limit the score to 0
+
+	// penalties
+	score -= mediumCount * 10
+	score -= lowCount * 3
+
+	if result.HTTP.UsedHTTPS {
+		score += 5
+	}
+
+	// limit score between 0 - 100
 	if score < 0 {
 		score = 0
 	}
-	riskLevel := classify(score)
+	if score > 100 {
+		score = 100
+	}
 
-	return score, riskLevel
+	return score, classify(score)
 }
 
 func classify(score int) string {
 	switch {
 	case score >= 80:
-		return "LOW"
+		return RiskLow
 	case score >= 60:
-		return "MEDIUM"
+		return RiskMedium
 	case score >= 40:
-		return "HIGH"
+		return RiskHigh
 	default:
-		return "CRITICAL"
+		return RiskCritical
 	}
 }
