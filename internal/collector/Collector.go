@@ -52,7 +52,7 @@ func CheckWebsite(rawURL string) (*models.Result, error) {
 	})
 
 	if err != nil {
-		result.Errors = append(result.Errors, fmt.Sprintf("DNS lookup failed: %v, err"))
+		result.Errors = append(result.Errors, fmt.Sprintf("DNS lookup failed: %v", err))
 	} else {
 		for _, ip := range ips {
 			ipStr := ip.String()
