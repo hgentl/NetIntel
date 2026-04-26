@@ -1,6 +1,9 @@
 package analyser
 
-import "netintel/internal/models"
+import (
+	"net/http"
+	"netintel/internal/models"
+)
 
 func checkHTTPStatus(result *models.Result) []models.Finding {
 	http := result.HTTP
@@ -51,18 +54,22 @@ func checkHTTPSecurityHeaders(result *models.Result) []models.Finding {
 
 	headers := result.HTTP.Headers
 
-	if result.HTTP.UsedHTTPS && headers.Get("Strict-Transport-Security") == "" {
+	if headers == nil {
+		headers = http.Header{}
+	}
+
+	if headers.Get("Strict-Transport-Security") == "" {
 		findings = append(findings, models.Finding{
 			Severity: models.Medium,
-			Type:     "Security",
+			Type:     "Headers",
 			Message:  "Missing HSTS header",
 		})
 	}
 
 	if headers.Get("Content-Security-Policy") == "" {
 		findings = append(findings, models.Finding{
-			Severity: models.Low,
-			Type:     "Security",
+			Severity: models.Medium,
+			Type:     "Headers",
 			Message:  "Missing Content Security Policy",
 		})
 	}

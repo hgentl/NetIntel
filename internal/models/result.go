@@ -6,14 +6,13 @@ import (
 )
 
 type Result struct {
-	URL  string
-	Host string
+	URL    string
+	Host   string
+	Errors []string
 
 	HTTP HTTPInfo
 	TLS  TLSInfo
 	DNS  DNSInfo
-
-	Errors []string
 }
 
 type HTTPInfo struct {

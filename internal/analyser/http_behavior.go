@@ -4,34 +4,35 @@ import (
 	"netintel/internal/models"
 )
 
-func checkHTTPBehavior(result *models.HTTPInfo) []models.Finding {
+func checkHTTPBehavior(result *models.Result) []models.Finding {
 	var findings []models.Finding
 
-	// Not using HTTPS
-	if !result.UsedHTTPS {
+	http := result.HTTP
+
+	// No HTTPS & no redirect
+	if !http.UsedHTTPS && http.RedirectCount == 0 {
 		findings = append(findings, models.Finding{
 			Severity: models.High,
-			Type:     "Implement later!",
-			Message:  "HTTPS not enforced",
+			Type:     "HTTP",
+			Message:  "HTTPS not enfored",
 		})
 	}
 
-	// Redirects present
-	if result.RedirectCount > 0 {
+	// Redirect chain
+	if http.RedirectCount > 0 && http.RedirectCount <= 3 {
 		findings = append(findings, models.Finding{
 			Severity: models.Low,
-			Type:     "Implement later!",
+			Type:     "HTTP",
 			Message:  "Redirect chain detected",
 		})
 	}
 
-	// Too many redirects
-	if result.RedirectCount > 3 {
+	// Excessive redirects
+	if http.RedirectCount > 3 {
 		findings = append(findings, models.Finding{
 			Severity: models.Medium,
-			Type:     "Implement later!",
-
-			Message: "Excessive redirects",
+			Type:     "HTTP",
+			Message:  "Excessive redirects",
 		})
 	}
 

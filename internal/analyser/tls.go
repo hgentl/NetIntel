@@ -9,46 +9,42 @@ func checkTLS(result *models.Result) []models.Finding {
 	var findings []models.Finding
 
 	tls := result.TLS
+	http := result.HTTP
 
-	// No TLS HTTP only
-	if !result.HTTP.UsedHTTPS {
-		findings = append(findings, models.Finding{
-			Severity: models.High,
-			Type:     "TLS",
-			Message:  "No TLS dectected",
-		})
-		return findings
+	// No HTTPS
+	if !http.UsedHTTPS {
+		return []models.Finding{
+			{
+				Severity: models.High,
+				Type:     "TLS",
+				Message:  "No TLS detected",
+			},
+		}
 	}
 
-	// If no expiry info, skip firther checks
-	if tls.Expiry.IsZero() {
-		return findings
+	// Determine days left untill expiry if avalable
+	daysLeft := tls.DaysLeft
+	if !tls.Expiry.IsZero() {
+		daysLeft = int(time.Until(tls.Expiry).Hours() / 24)
 	}
 
-	daysLeft := int(time.Until(tls.Expiry).Hours() / 24)
-
-	// Expierd cert
+	// Expired cert
 	if daysLeft < 0 {
-		findings = append(findings, models.Finding{
-			Severity: models.Critical,
-			Type:     "TLS",
-			Message:  "TLS certificate has espired",
-		})
-	} else if daysLeft < 7 {
-		// Expiring soon
+		return []models.Finding{
+			{
+				Severity: models.Critical,
+				Type:     "TLS",
+				Message:  "TLS certificate has expired",
+			},
+		}
+
+	}
+	// Expiring soon
+	if daysLeft >= 0 && daysLeft < 7 {
 		findings = append(findings, models.Finding{
 			Severity: models.High,
 			Type:     "TLS",
-			Message:  "TLS certificate expires soon",
-		})
-	}
-
-	// Iformationl
-	if tls.Issuer != "" {
-		findings = append(findings, models.Finding{
-			Severity: models.Low,
-			Type:     "TLS",
-			Message:  "TLS issuer " + tls.Issuer,
+			Message:  "TLS certificate expiring soon",
 		})
 	}
 
