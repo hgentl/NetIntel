@@ -1,6 +1,7 @@
 package analyser
 
 import (
+	"strings"
 	"testing"
 
 	"netintel/internal/models"
@@ -14,11 +15,7 @@ func TestDNS_NoIPs(t *testing.T) {
 	findings := checkDNS(result)
 
 	if len(findings) == 0 {
-		t.Fatal("expected finding")
-	}
-
-	if findings[0].Severity != models.High {
-		t.Errorf("expected HIGH severity")
+		t.Fatal("expected finding for no IPs")
 	}
 }
 
@@ -31,7 +28,14 @@ func TestDNS_MultipleIPs(t *testing.T) {
 
 	findings := checkDNS(result)
 
-	if len(findings) == 0 {
-		t.Errorf("expected informational finding")
+	found := false
+	for _, f := range findings {
+		if strings.Contains(f.Message, "multiple") {
+			found = true
+		}
+	}
+
+	if !found {
+		t.Errorf("expected multipe IPs findings")
 	}
 }

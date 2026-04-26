@@ -1,6 +1,7 @@
 package analyser
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -50,5 +51,32 @@ func TestTLS_ValidCert(t *testing.T) {
 
 	if len(findings) != 0 {
 		t.Errorf("expected no findings for valid cert")
+	}
+}
+
+// TLS Expiry
+func TestAnalyser_TLSExpired(t *testing.T) {
+	result := &models.Result{
+		HTTP: models.HTTPInfo{
+			UsedHTTPS: true,
+		},
+		TLS: models.TLSInfo{
+			DaysLeft: -1,
+			Expiry:   time.Now().Add(-24 * time.Hour),
+		},
+	}
+
+	findings := Analyse(result)
+
+	found := false
+	for _, f := range findings {
+		if f.Severity == models.Critical &&
+			strings.Contains(f.Message, "expired") {
+			found = true
+		}
+	}
+
+	if !found {
+		t.Errorf("expected critical TLS finding")
 	}
 }

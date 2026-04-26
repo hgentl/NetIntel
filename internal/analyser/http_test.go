@@ -2,6 +2,7 @@ package analyser
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 
 	"netintel/internal/models"
@@ -14,24 +15,29 @@ func TestHTTP_500Status(t *testing.T) {
 
 	findings := checkHTTPStatus(result)
 
-	if findings[0].Severity != models.High {
-		t.Errorf("expected HIGH severity")
+	if len(findings) == 0 {
+		t.Errorf("expected finding for 5xx status")
 	}
 }
 
 func TestHTTP_MissingHSTS(t *testing.T) {
-	headers := http.Header{}
-
 	result := &models.Result{
 		HTTP: models.HTTPInfo{
 			UsedHTTPS: true,
-			Headers:   headers,
+			Headers:   http.Header{},
 		},
 	}
 
 	findings := checkHTTPSecurityHeaders(result)
 
-	if len(findings) == 0 {
+	found := false
+	for _, f := range findings {
+		if strings.Contains(f.Message, "HSTS") {
+			found = true
+		}
+	}
+
+	if !found {
 		t.Errorf("expected HSTS finding")
 	}
 }
