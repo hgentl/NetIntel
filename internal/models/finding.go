@@ -14,10 +14,3 @@ type Finding struct {
 	Type     string
 	Message  string
 }
-
-/* old code
-type Finding struct {
-	Severity Severity
-	Message  string
-}
-*/
