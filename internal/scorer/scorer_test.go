@@ -7,6 +7,7 @@ import (
 )
 
 // Boundary Tests
+// Upper bound
 func TestScore_UpperBound(t *testing.T) {
 	result := &models.Result{
 		HTTP: models.HTTPInfo{UsedHTTPS: true},
@@ -19,6 +20,7 @@ func TestScore_UpperBound(t *testing.T) {
 	}
 }
 
+// Lower bound
 func TestScore_LowerBound(t *testing.T) {
 	findings := []models.Finding{
 		{Severity: models.Critical},
@@ -79,7 +81,7 @@ func TestScoring_HighSeverityDominates(t *testing.T) {
 	}
 }
 
-// HTTPS Bonus test -> confirms bonus applied & cap works
+// Tests HTTPS bonus is applied & cap works
 func TestScore_HTTPSBonus(t *testing.T) {
 	findings := []models.Finding{}
 
